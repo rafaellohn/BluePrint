@@ -1,0 +1,43 @@
+blueprint:
+  name: Paralelo Virtual (Sem Loop)
+  description: Acenda/Apaga todos os switches/lights do grupo simultaneamente sem gerar loop
+  domain: automation
+  input:
+    entrada_switchs:
+      name: Escolha os pontos de Iluminação
+      selector:
+        entity:
+          domain:
+            - switch
+            - light
+          multiple: true
+
+trigger:
+  - platform: state
+    entity_id: !input entrada_switchs
+
+variables:
+  entidades_alvo: >
+    {% set origem = trigger.entity_id %}
+    {% set lista = expand(inputs.entrada_switchs) | map(attribute='entity_id') | reject('equalto', origem) | list %}
+    {{ lista }}
+
+action:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ trigger.to_state.state in ['on', 'off'] }}
+        sequence:
+          - service: >
+              {% if trigger.to_state.state == "on" %}
+                homeassistant.turn_on
+              {% else %}
+                homeassistant.turn_off
+              {% endif %}
+            data:
+              entity_id: "{{ entidades_alvo }}"
+  - delay:
+      seconds: 1
+
+mode: restart
