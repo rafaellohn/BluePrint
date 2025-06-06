@@ -6,16 +6,22 @@ blueprint:
     entrada_switchs:
       name: Escolha os pontos de Iluminação
       selector:
-            entity:
-              domain:
-                - switch
-                - light
-              multiple: true
+        entity:
+          domain:
+            - switch
+            - light
+          multiple: true
 
 trigger:
   - platform: state
     entity_id: !input entrada_switchs
     id: "entrada"
+
+variables:
+  entidades_alvo: >
+    {% set origem = trigger.entity_id %}
+    {% set lista = expand(inputs.entrada_switchs) | map(attribute='entity_id') | reject('equalto', origem) | list %}
+    {{ lista }}
 
 action:
   - choose:
@@ -31,6 +37,6 @@ action:
                 homeassistant.turn_off
               {% endif %}
             target:
-              entity_id: >
-                {% set orig = trigger.entity_id %}
-                {{ expand(!input entrada_switchs) | map(attribute='entity_id') | reject('equalto', orig) | list }}
+              entity_id: "{{ entidades_alvo }}"
+
+mode: restart
